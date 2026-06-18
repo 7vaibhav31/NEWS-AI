@@ -30,7 +30,7 @@ class AiNewsController extends Controller
             'per_run_count' => 'required|integer|min:1|max:50',
             'min_words' => 'required|integer|min:50',
             'max_words' => 'required|integer|gte:min_words',
-            'image_provider' => 'nullable|in:openai',
+            'image_provider' => 'nullable|in:openai,pollinations',
             'image_model' => 'nullable|in:dall-e-2,dall-e-3',
         ]);
 

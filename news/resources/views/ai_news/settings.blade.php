@@ -81,6 +81,7 @@
                                     <label>Image Generator Provider</label>
                                     <select name="image_provider" class="form-control">
                                         <option value="openai" {{ $settings->image_provider == 'openai' ? 'selected' : '' }}>OpenAI (DALL-E)</option>
+                                        <option value="pollinations" {{ $settings->image_provider == 'pollinations' ? 'selected' : '' }}>Free AI (Pollinations.ai - No Key Required)</option>
                                     </select>
                                 </div>
                                 <div class="form-group">

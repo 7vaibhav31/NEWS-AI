@@ -337,10 +337,27 @@ class AiNewsService
     }
 
     /**
-     * Call the image generation API (DALL-E), download it, and save it to public storage.
+     * Call the image generation API (DALL-E or Pollinations), download it, and save it to public storage.
      */
     protected function generateAndSaveImage(int $newsId, string $prompt): ?string
     {
+        $provider = $this->settings->image_provider ?: 'openai';
+
+        if ($provider === 'pollinations') {
+            $imageUrl = 'https://image.pollinations.ai/prompt/' . urlencode(mb_substr($prompt, 0, 900)) . '?width=512&height=512&nologo=true&private=true';
+            $imageContent = Http::timeout(60)->get($imageUrl)->body();
+            if (empty($imageContent)) {
+                throw new \RuntimeException('Failed to download image from Pollinations.ai');
+            }
+
+            $filename = 'article_' . $newsId . '_' . time() . '.jpg';
+            $path = 'news/' . $filename;
+
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, $imageContent);
+
+            return $filename;
+        }
+
         $apiKey = $this->settings->openai_api_key;
         if (empty($apiKey)) {
             throw new \RuntimeException('OpenAI API key is not configured for image generation.');
