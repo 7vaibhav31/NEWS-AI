@@ -16,7 +16,15 @@ class SubCategory extends Model
 
     public function getImageAttribute($image)
     {
-        return $image && Storage::disk('public')->exists($image) ? url(Storage::url('/' . $image)) : '';
+        if (empty($image)) {
+            return '';
+        }
+
+        if (Storage::disk('public')->exists($image)) {
+            return url(Storage::url('/' . $image));
+        }
+
+        return 'https://news.horizonmedia.in/storage/' . $image;
     }
 
     public function category()

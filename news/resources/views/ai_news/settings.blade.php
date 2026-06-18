@@ -75,17 +75,17 @@
                                         <input type="checkbox" class="custom-control-input" id="enable_image_generation" name="enable_image_generation" value="1" {{ $settings->enable_image_generation ? 'checked' : '' }}>
                                         <label class="custom-control-label" for="enable_image_generation">Enable AI Image Generation</label>
                                     </div>
-                                    <small class="text-muted d-block mt-1">Uses your OpenAI API Key to generate cover photos automatically for new articles.</small>
+                                    <small class="text-muted d-block mt-1" id="img_hint">Automatically generates a cover photo for each new article.</small>
                                 </div>
                                 <div class="form-group">
                                     <label>Image Generator Provider</label>
-                                    <select name="image_provider" class="form-control">
-                                        <option value="openai" {{ $settings->image_provider == 'openai' ? 'selected' : '' }}>OpenAI (DALL-E)</option>
-                                        <option value="pollinations" {{ $settings->image_provider == 'pollinations' ? 'selected' : '' }}>Free AI (Pollinations.ai - No Key Required)</option>
+                                    <select name="image_provider" class="form-control" id="image_provider_select">
+                                        <option value="openai" {{ $settings->image_provider == 'openai' ? 'selected' : '' }}>OpenAI (DALL-E) — requires OpenAI API key</option>
+                                        <option value="pollinations" {{ $settings->image_provider == 'pollinations' ? 'selected' : '' }}>Free AI (Pollinations.ai) — No key required ✓</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
-                                    <label>Image Generator Model</label>
+                                <div class="form-group" id="dalle_model_group">
+                                    <label>DALL-E Model <small class="text-muted">(only used when OpenAI is selected)</small></label>
                                     <select name="image_model" class="form-control">
                                         <option value="dall-e-2" {{ $settings->image_model == 'dall-e-2' ? 'selected' : '' }}>DALL-E 2 (Fast, Cost-effective)</option>
                                         <option value="dall-e-3" {{ $settings->image_model == 'dall-e-3' ? 'selected' : '' }}>DALL-E 3 (High quality, Detailed)</option>
@@ -202,4 +202,24 @@
             </div>
         </div>
     </section>
+@push('scripts')
+<script>
+(function () {
+    var providerSelect = document.getElementById('image_provider_select');
+    var dalleGroup = document.getElementById('dalle_model_group');
+    var hint = document.getElementById('img_hint');
+
+    function toggleDalleModel() {
+        var isPollinations = providerSelect.value === 'pollinations';
+        dalleGroup.style.display = isPollinations ? 'none' : 'block';
+        hint.textContent = isPollinations
+            ? 'Free image generation via Pollinations.ai — no API key required.'
+            : 'Generates images via OpenAI DALL-E — requires your OpenAI API key.';
+    }
+
+    providerSelect.addEventListener('change', toggleDalleModel);
+    toggleDalleModel(); // run on page load
+})();
+</script>
+@endpush
 @endsection

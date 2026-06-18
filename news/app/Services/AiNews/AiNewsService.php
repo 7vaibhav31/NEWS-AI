@@ -147,7 +147,7 @@ class AiNewsService
             . '{"title": string, "description": string (clean HTML using <p>, <h2>, <ul><li> only), '
             . '"meta_title": string (<=60 chars), "meta_description": string (<=160 chars), '
             . '"meta_keywords": string[] (5-8 items), "tags": string[] (2-4 items), '
-            . '"image_prompt": string (a short description of the scene to generate an image for this article, without using words like "photorealistic" or "HQ")}';
+            . '"image_prompt": string (a vivid, specific visual scene directly related to the article topic — describe key subjects, setting, and mood in 1-2 sentences; do NOT use words like "photorealistic", "HQ", or "illustration")}';
 
         $raw = $provider->complete($system, $user);
         $data = $this->parseJson($raw);

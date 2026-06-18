@@ -16,10 +16,19 @@ class News_image extends Model
 
     public function getOtherImageAttribute($other_image)
     {
-        if (!empty($other_image) && strpos($other_image, 'news/') === false) {
+        if (empty($other_image)) {
+            return '';
+        }
+
+        if (strpos($other_image, 'news/') === false) {
             $other_image = 'news/' . $this->news_id . '/' . $other_image;
         }
-        return $other_image && Storage::disk('public')->exists($other_image) ? url(Storage::url($other_image)) : '';
+
+        if (Storage::disk('public')->exists($other_image)) {
+            return url(Storage::url($other_image));
+        }
+
+        return 'https://news.horizonmedia.in/storage/' . $other_image;
     }
 
     public function news()

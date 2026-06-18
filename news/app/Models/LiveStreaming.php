@@ -21,12 +21,20 @@ class LiveStreaming extends Model
 
     public function getImageAttribute($image)
     {
+        if (empty($image)) {
+            return '';
+        }
+
         // If type is File Upload or Video Upload and liveStreaming is not in the image path, add it.
-        if (!empty($image) && strpos($image, 'liveStreaming/') === false) {
+        if (strpos($image, 'liveStreaming/') === false) {
             $image = 'liveStreaming/' . $image;
         }
 
-        return $image && Storage::disk('public')->exists($image) ? url(Storage::url($image)) : '';
+        if (Storage::disk('public')->exists($image)) {
+            return url(Storage::url($image));
+        }
+
+        return 'https://news.horizonmedia.in/storage/' . $image;
     }
 
     protected static function boot()

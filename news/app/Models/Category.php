@@ -16,11 +16,19 @@ class Category extends Model
 
     public function getImageAttribute($image)
     {
-        if ($image && strpos($image, 'category/') === false) {
+        if (empty($image)) {
+            return '';
+        }
+
+        if (strpos($image, 'category/') === false) {
             $image = 'category/' . $image;
         }
 
-        return $image && Storage::disk('public')->exists($image) ? url(Storage::url($image)) : '';
+        if (Storage::disk('public')->exists($image)) {
+            return url(Storage::url($image));
+        }
+
+        return 'https://news.horizonmedia.in/storage/' . $image;
     }
 
     public function language()

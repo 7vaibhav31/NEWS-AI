@@ -16,11 +16,19 @@ class News extends Model
 
     public function getImageAttribute($image)
     {
-        if (!empty($image) && strpos($image, 'news/') === false) {
+        if (empty($image)) {
+            return '';
+        }
+
+        if (strpos($image, 'news/') === false) {
             $image = 'news/' . $image;
         }
 
-        return $image && Storage::disk('public')->exists($image) ? url(Storage::url($image)) : '';
+        if (Storage::disk('public')->exists($image)) {
+            return url(Storage::url($image));
+        }
+
+        return 'https://news.horizonmedia.in/storage/' . $image;
     }
 
     public function language()
