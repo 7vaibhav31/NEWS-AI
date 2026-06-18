@@ -1,0 +1,36 @@
+# Root .gitignore
+
+# Python Virtual Environment
+venv/
+.venv/
+
+# Laravel files
+news/public/assets/firebase_config.json
+news/vendor/
+news/node_modules/
+news/bootstrap/cache/*.php
+news/storage/*.key
+news/storage/framework/cache/data/*
+news/storage/framework/sessions/*
+news/storage/framework/testing/*
+news/storage/framework/views/*
+news/storage/logs/*.log
+news/public/storage
+news/.env
+
+# Next.js/Frontend build files (if any)
+newsnow/node_modules/
+newsnow/.next/
+newsnow/out/
+
+# General IDE and OS files
+.idea/
+.vscode/
+*.suo
+*.ntvsca*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
