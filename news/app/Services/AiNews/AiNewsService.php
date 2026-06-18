@@ -146,7 +146,8 @@ class AiNewsService
         $user = $sourceLine . "\n\nReturn JSON with exactly these keys: "
             . '{"title": string, "description": string (clean HTML using <p>, <h2>, <ul><li> only), '
             . '"meta_title": string (<=60 chars), "meta_description": string (<=160 chars), '
-            . '"meta_keywords": string[] (5-8 items), "tags": string[] (2-4 items)}';
+            . '"meta_keywords": string[] (5-8 items), "tags": string[] (2-4 items), '
+            . '"image_prompt": string (a short description of the scene to generate an image for this article, without using words like "photorealistic" or "HQ")}';
 
         $raw = $provider->complete($system, $user);
         $data = $this->parseJson($raw);
@@ -162,6 +163,7 @@ class AiNewsService
             'meta_description' => trim($data['meta_description'] ?? ''),
             'meta_keywords' => $this->asList($data['meta_keywords'] ?? []),
             'tags' => $this->asList($data['tags'] ?? []),
+            'image_prompt' => trim($data['image_prompt'] ?? ''),
         ];
     }
 
@@ -198,6 +200,18 @@ class AiNewsService
         $news->meta_keyword = implode(',', $article['meta_keywords']);
         $news->schema_markup = '';
         $news->save();
+
+        if ($this->settings->enable_image_generation && !empty($article['image_prompt'])) {
+            try {
+                $imageFilename = $this->generateAndSaveImage((int) $news->id, $article['image_prompt']);
+                if ($imageFilename) {
+                    $news->image = $imageFilename;
+                    $news->save();
+                }
+            } catch (Throwable $e) {
+                Log::warning('[AiNews] Image generation failed for article ' . $news->id . ': ' . $e->getMessage());
+            }
+        }
 
         return (int) $news->id;
     }
@@ -320,5 +334,50 @@ class AiNewsService
             'message' => mb_substr($message, 0, 1000),
             'source_mode' => $this->settings->source_mode,
         ]);
+    }
+
+    /**
+     * Call the image generation API (DALL-E), download it, and save it to public storage.
+     */
+    protected function generateAndSaveImage(int $newsId, string $prompt): ?string
+    {
+        $apiKey = $this->settings->openai_api_key;
+        if (empty($apiKey)) {
+            throw new \RuntimeException('OpenAI API key is not configured for image generation.');
+        }
+
+        $model = $this->settings->image_model ?: 'dall-e-2';
+        $size = $model === 'dall-e-3' ? '1024x1024' : '512x512';
+
+        $response = Http::timeout(120)
+            ->withToken($apiKey)
+            ->acceptJson()
+            ->post('https://api.openai.com/v1/images/generations', [
+                'model' => $model,
+                'prompt' => mb_substr($prompt, 0, 950),
+                'n' => 1,
+                'size' => $size,
+            ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('DALL-E API error: ' . $response->status() . ' ' . $response->body());
+        }
+
+        $imageUrl = $response->json('data.0.url');
+        if (empty($imageUrl)) {
+            throw new \RuntimeException('DALL-E returned no image URL.');
+        }
+
+        $imageContent = Http::timeout(60)->get($imageUrl)->body();
+        if (empty($imageContent)) {
+            throw new \RuntimeException('Failed to download generated image.');
+        }
+
+        $filename = 'article_' . $newsId . '_' . time() . '.jpg';
+        $path = 'news/' . $filename;
+
+        \Illuminate\Support\Facades\Storage::disk('public')->put($path, $imageContent);
+
+        return $filename;
     }
 }

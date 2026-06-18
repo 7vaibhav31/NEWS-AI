@@ -68,6 +68,32 @@
                         </div>
 
                         <div class="card card-primary card-outline">
+                            <div class="card-header"><h3 class="card-title">AI Image Generation</h3></div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <div class="custom-control custom-switch">
+                                        <input type="checkbox" class="custom-control-input" id="enable_image_generation" name="enable_image_generation" value="1" {{ $settings->enable_image_generation ? 'checked' : '' }}>
+                                        <label class="custom-control-label" for="enable_image_generation">Enable AI Image Generation</label>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">Uses your OpenAI API Key to generate cover photos automatically for new articles.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Image Generator Provider</label>
+                                    <select name="image_provider" class="form-control">
+                                        <option value="openai" {{ $settings->image_provider == 'openai' ? 'selected' : '' }}>OpenAI (DALL-E)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Image Generator Model</label>
+                                    <select name="image_model" class="form-control">
+                                        <option value="dall-e-2" {{ $settings->image_model == 'dall-e-2' ? 'selected' : '' }}>DALL-E 2 (Fast, Cost-effective)</option>
+                                        <option value="dall-e-3" {{ $settings->image_model == 'dall-e-3' ? 'selected' : '' }}>DALL-E 3 (High quality, Detailed)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card card-primary card-outline">
                             <div class="card-header"><h3 class="card-title">Provider API Keys</h3></div>
                             <div class="card-body">
                                 <p class="text-muted">Keys are stored encrypted. Leave a field blank to keep the saved key.</p>

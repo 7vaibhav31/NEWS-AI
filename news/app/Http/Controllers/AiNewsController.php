@@ -30,6 +30,8 @@ class AiNewsController extends Controller
             'per_run_count' => 'required|integer|min:1|max:50',
             'min_words' => 'required|integer|min:50',
             'max_words' => 'required|integer|gte:min_words',
+            'image_provider' => 'nullable|in:openai',
+            'image_model' => 'nullable|in:dall-e-2,dall-e-3',
         ]);
 
         $settings = AiNewsSetting::config();
@@ -39,6 +41,10 @@ class AiNewsController extends Controller
         $settings->openai_model = $request->openai_model ?: 'gpt-4o-mini';
         $settings->gemini_model = $request->gemini_model ?: 'gemini-1.5-flash';
         $settings->claude_model = $request->claude_model ?: 'claude-3-5-sonnet-20241022';
+
+        $settings->enable_image_generation = $request->boolean('enable_image_generation');
+        $settings->image_provider = $request->image_provider ?: 'openai';
+        $settings->image_model = $request->image_model ?: 'dall-e-2';
 
         // Only overwrite a key when the admin actually typed a new one.
         if ($request->filled('openai_api_key')) { $settings->openai_api_key = $request->openai_api_key; }

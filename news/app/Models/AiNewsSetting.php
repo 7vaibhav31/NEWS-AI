@@ -16,6 +16,7 @@ class AiNewsSetting extends Model
         'claude_api_key', 'claude_model',
         'default_language_id', 'default_category_id',
         'auto_publish', 'per_run_count',
+        'enable_image_generation', 'image_provider', 'image_model',
         'source_mode', 'topics', 'rss_urls',
         'tone', 'min_words', 'max_words', 'last_run_at',
     ];
