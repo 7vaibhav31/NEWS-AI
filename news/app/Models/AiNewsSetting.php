@@ -14,6 +14,7 @@ class AiNewsSetting extends Model
         'openai_api_key', 'openai_model',
         'gemini_api_key', 'gemini_model',
         'claude_api_key', 'claude_model',
+        'groq_api_key', 'groq_model',
         'default_language_id', 'default_category_id',
         'auto_publish', 'per_run_count',
         'enable_image_generation', 'image_provider', 'image_model',
@@ -70,6 +71,9 @@ class AiNewsSetting extends Model
     public function setClaudeApiKeyAttribute($v) { $this->attributes['claude_api_key'] = $this->encryptKey($v); }
     public function getClaudeApiKeyAttribute($v) { return $this->decryptKey($v); }
 
+    public function setGroqApiKeyAttribute($v) { $this->attributes['groq_api_key'] = $this->encryptKey($v); }
+    public function getGroqApiKeyAttribute($v) { return $this->decryptKey($v); }
+
     /**
      * The active provider's API key + model based on the `provider` column.
      *
@@ -78,6 +82,7 @@ class AiNewsSetting extends Model
     public function activeCredentials(): array
     {
         return match ($this->provider) {
+            'groq'   => ['key' => $this->groq_api_key, 'model' => $this->groq_model],
             'gemini' => ['key' => $this->gemini_api_key, 'model' => $this->gemini_model],
             'claude' => ['key' => $this->claude_api_key, 'model' => $this->claude_model],
             default  => ['key' => $this->openai_api_key, 'model' => $this->openai_model],

@@ -248,3 +248,16 @@ Route::group(['middleware' => ['auth:admin', 'checkLogin']], function () {
         Route::get('roles_list', [RoleController::class, 'list'])->name('roles.list');
     });
 });
+
+Route::get('storage/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
+    $file = \Illuminate\Support\Facades\File::get($fullPath);
+    $type = \Illuminate\Support\Facades\File::mimeType($fullPath);
+    $response = \Illuminate\Support\Facades\Response::make($file, 200);
+    $response->header('Content-Type', $type);
+    $response->header('Access-Control-Allow-Origin', '*');
+    return $response;
+})->where('path', '.*');

@@ -25,7 +25,7 @@ class AiNewsController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'provider' => 'required|in:openai,gemini,claude',
+            'provider' => 'required|in:openai,gemini,claude,groq',
             'source_mode' => 'required|in:topics,rss',
             'per_run_count' => 'required|integer|min:1|max:50',
             'min_words' => 'required|integer|min:50',
@@ -41,6 +41,7 @@ class AiNewsController extends Controller
         $settings->openai_model = $request->openai_model ?: 'gpt-4o-mini';
         $settings->gemini_model = $request->gemini_model ?: 'gemini-1.5-flash';
         $settings->claude_model = $request->claude_model ?: 'claude-3-5-sonnet-20241022';
+        $settings->groq_model = $request->groq_model ?: 'llama-3.1-8b-instant';
 
         $settings->enable_image_generation = $request->boolean('enable_image_generation');
         $settings->image_provider = $request->image_provider ?: 'openai';
@@ -50,6 +51,7 @@ class AiNewsController extends Controller
         if ($request->filled('openai_api_key')) { $settings->openai_api_key = $request->openai_api_key; }
         if ($request->filled('gemini_api_key')) { $settings->gemini_api_key = $request->gemini_api_key; }
         if ($request->filled('claude_api_key')) { $settings->claude_api_key = $request->claude_api_key; }
+        if ($request->filled('groq_api_key')) { $settings->groq_api_key = $request->groq_api_key; }
 
         $settings->default_language_id = (int) $request->default_language_id;
         $settings->default_category_id = (int) $request->default_category_id;

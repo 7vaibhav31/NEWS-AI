@@ -58,6 +58,7 @@
                                         <option value="openai" {{ $settings->provider == 'openai' ? 'selected' : '' }}>OpenAI (GPT)</option>
                                         <option value="gemini" {{ $settings->provider == 'gemini' ? 'selected' : '' }}>Google Gemini</option>
                                         <option value="claude" {{ $settings->provider == 'claude' ? 'selected' : '' }}>Anthropic Claude</option>
+                                        <option value="groq" {{ $settings->provider == 'groq' ? 'selected' : '' }}>Groq</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -112,6 +113,11 @@
                                     <label>Claude API Key</label>
                                     <input type="password" name="claude_api_key" class="form-control" placeholder="{{ $settings->claude_api_key ? '•••••••• (saved)' : 'sk-ant-...' }}" autocomplete="off">
                                     <input type="text" name="claude_model" class="form-control mt-2" value="{{ $settings->claude_model }}" placeholder="claude-3-5-sonnet-20241022">
+                                </div>
+                                <div class="form-group">
+                                    <label>Groq API Key</label>
+                                    <input type="password" name="groq_api_key" class="form-control" placeholder="{{ $settings->groq_api_key ? '•••••••• (saved)' : 'gsk_...' }}" autocomplete="off">
+                                    <input type="text" name="groq_model" class="form-control mt-2" value="{{ $settings->groq_model }}" placeholder="llama-3.1-8b-instant">
                                 </div>
                             </div>
                         </div>
