@@ -131,31 +131,49 @@ class AiNewsService
         $topic = $isRss ? $seed['title'] : (string) $seed;
         $context = $isRss && !empty($seed['summary']) ? $seed['summary'] : '';
 
-        $system = trim(
-            "You are a professional news editor writing original articles in {$language}. "
-            . ($this->settings->tone ?: 'Neutral, factual, journalistic style.')
-            . " Write ORIGINAL prose. Do NOT copy any provided source text verbatim; rewrite in your own words. "
-            . "Do not invent quotes or fake statistics. Target {$this->settings->min_words}-{$this->settings->max_words} words. "
-            . "Return ONLY valid minified JSON, no markdown, no commentary."
-        );
+        // GROQ: Use enhanced prompts for higher-quality journalism output
+        if ($this->settings->provider === 'groq') {
+            $system = $this->buildGroqSystemPrompt($language);
+            $user = $this->buildGroqUserPrompt($topic, $context);
+        } else {
+            // Other providers: Use existing prompts (OpenAI, Gemini, Claude unchanged)
+            $system = trim(
+                "You are a professional news editor writing original articles in {$language}. "
+                . ($this->settings->tone ?: 'Neutral, factual, journalistic style.')
+                . " Write ORIGINAL prose. Do NOT copy any provided source text verbatim; rewrite in your own words. "
+                . "Do not invent quotes or fake statistics. Target {$this->settings->min_words}-{$this->settings->max_words} words. "
+                . "Return ONLY valid minified JSON, no markdown, no commentary."
+            );
 
-        $sourceLine = $context !== ''
-            ? "Reference headline: \"{$topic}\". Reference summary (rewrite, do not copy): \"{$context}\"."
-            : "Write a fresh news article about: \"{$topic}\".";
+            $sourceLine = $context !== ''
+                ? "Reference headline: \"{$topic}\". Reference summary (rewrite, do not copy): \"{$context}\"."
+                : "Write a fresh news article about: \"{$topic}\".";
 
-        $user = $sourceLine . "\n\nReturn JSON with exactly these keys: "
-            . '{"title": string, "description": string (clean HTML using <p>, <h2>, <ul><li> only), '
-            . '"meta_title": string (<=60 chars), "meta_description": string (<=160 chars), '
-            . '"meta_keywords": string[] (5-8 items), "tags": string[] (2-4 items), '
-            . '"image_prompt": string (a short description of the scene to generate an image for this article, without using words like "photorealistic" or "HQ")}';
+            $user = $sourceLine . "\n\nReturn JSON with exactly these keys: "
+                . '{"title": string, "description": string (clean HTML using <p>, <h2>, <ul><li> only), '
+                . '"meta_title": string (<=60 chars), "meta_description": string (<=160 chars), '
+                . '"meta_keywords": string[] (5-8 items), "tags": string[] (2-4 items), '
+                . '"image_prompt": string (a short description of the scene to generate an image for this article, without using words like "photorealistic" or "HQ")}';
+        }
 
+        // Call provider (same for all)
         $raw = $provider->complete($system, $user);
         $data = $this->parseJson($raw);
 
-        if (empty($data['title']) || empty($data['description'])) {
-            throw new \RuntimeException('Model response missing title/description.');
+        // GROQ: Enhanced validation with fallback field mapping
+        if ($this->settings->provider === 'groq') {
+            if (!$this->validateGroqResponse($data)) {
+                throw new \RuntimeException('Groq response validation failed: missing required fields (title, description, image_prompt).');
+            }
+            $data = $this->normalizeGroqResponse($data);
+        } else {
+            // Other providers: Use existing validation
+            if (empty($data['title']) || empty($data['description'])) {
+                throw new \RuntimeException('Model response missing title/description.');
+            }
         }
 
+        // Return EXACT SAME schema for all providers (including Groq)
         return [
             'title' => trim($data['title']),
             'description' => $this->sanitizeHtml($data['description']),
@@ -322,6 +340,97 @@ class AiNewsService
         $clean = preg_replace('/\son\w+="[^"]*"/i', '', $clean);
         $clean = preg_replace('/javascript:/i', '', $clean);
         return trim($clean);
+    }
+
+    /**
+     * Build enhanced system prompt for Groq (human-like journalism quality).
+     * Applied ONLY when provider === 'groq'.
+     * Other providers use the standard prompt.
+     */
+    protected function buildGroqSystemPrompt($language): string
+    {
+        return trim(
+            "You are a professional news journalist writing original, publication-ready articles in {$language}. "
+            . "Your writing style must be: "
+            . "- Clear, direct, conversational tone (avoid corporate jargon and buzzwords) "
+            . "- Human-like narrative (strictly avoid AI clichés like 'delves into', 'opens up about', 'sheds light on', 'it's worth noting that', 'arguably', 'interestingly', 'remarkably') "
+            . "- Engaging opening paragraph that hooks the reader immediately "
+            . "- Well-structured with clear sections and logical flow "
+            . "- Professional but accessible language suitable for news publication "
+            . "- Original prose written in your own words, NOT copied from sources "
+            . ($this->settings->tone ?: 'Neutral, factual, investigative journalism style.')
+            . " Do NOT invent quotes or fake statistics. Do NOT include AI-generated phrases. "
+            . "Target {$this->settings->min_words}-{$this->settings->max_words} words for the article body. "
+            . "Return ONLY valid minified JSON (no markdown, no extra text, no commentary)."
+        );
+    }
+
+    /**
+     * Build enhanced user prompt for Groq requesting explicit article fields.
+     * Applied ONLY when provider === 'groq'.
+     * Requests headline, article, summary, meta-description, keywords, tags, and image prompt.
+     */
+    protected function buildGroqUserPrompt(string $topic, string $context): string
+    {
+        $sourceLine = !empty($context)
+            ? "Reference headline: \"{$topic}\"\nReference summary (you must rewrite and expand, do NOT copy verbatim): \"{$context}\""
+            : "Write a fresh, original news article about: \"{$topic}\"";
+
+        return $sourceLine . "\n\nGenerate a complete, publication-ready news article. Return ONLY valid minified JSON (no markdown, no extra text) with exactly these keys:\n"
+            . "{\n"
+            . '  "title": "compelling headline/title (descriptive, under 60 chars, suitable for news publication)",\n'
+            . '  "description": "full article body (publication-ready, using only <p>, <h2>, <ul>, <li>, <strong>, <em>, <a> tags)",\n'
+            . '  "meta_title": "SEO title (max 60 characters)",\n'
+            . '  "meta_description": "SEO description summary (max 160 characters, 2-3 sentences)",\n'
+            . '  "meta_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],\n'
+            . '  "tags": ["topic1", "topic2", "topic3"],\n'
+            . '  "image_prompt": "A detailed description of the image scene for this article (vivid scene details, mood, setting, but without using AI art keywords like photorealistic, 8k, 4k, hyperrealistic, or similar)"\n'
+            . "}";
+    }
+
+    /**
+     * Validate Groq response contains required fields.
+     * Supports fallback field names: 'headline' for 'title', 'article' for 'description'.
+     * Returns true only if all required fields have non-empty values.
+     * Applied ONLY when provider === 'groq'.
+     */
+    protected function validateGroqResponse(array $data): bool
+    {
+        // Support fallback field names
+        $title = $data['title'] ?? $data['headline'] ?? null;
+        $description = $data['description'] ?? $data['article'] ?? null;
+        $image_prompt = $data['image_prompt'] ?? null;
+
+        // All three required fields must exist and be non-empty
+        return !empty($title) && !empty($description) && !empty($image_prompt);
+    }
+
+    /**
+     * Normalize Groq response by mapping fallback field names to standard field names.
+     * Ensures all expected fields exist with safe fallback values (empty strings/arrays).
+     * Applied ONLY when provider === 'groq', AFTER validation passes.
+     * Returns array with exact same keys as other providers for consistent downstream processing.
+     */
+    protected function normalizeGroqResponse(array $data): array
+    {
+        // Map fallback field names to standard names
+        if (empty($data['title']) && !empty($data['headline'])) {
+            $data['title'] = $data['headline'];
+        }
+        if (empty($data['description']) && !empty($data['article'])) {
+            $data['description'] = $data['article'];
+        }
+
+        // Ensure all expected keys exist (validation already passed, so these should be present)
+        return [
+            'title' => $data['title'] ?? '',
+            'description' => $data['description'] ?? '',
+            'meta_title' => $data['meta_title'] ?? '',
+            'meta_description' => $data['meta_description'] ?? '',
+            'meta_keywords' => $data['meta_keywords'] ?? [],
+            'tags' => $data['tags'] ?? [],
+            'image_prompt' => $data['image_prompt'] ?? '',
+        ];
     }
 
     protected function log(?int $newsId, ?string $title, string $status, string $message): void
