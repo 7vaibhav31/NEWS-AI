@@ -453,7 +453,7 @@ class AiNewsService
         $provider = $this->settings->image_provider ?: 'openai';
 
         if ($provider === 'pollinations') {
-            $imageUrl = 'https://image.pollinations.ai/prompt/' . urlencode(mb_substr($prompt, 0, 900)) . '?width=512&height=512&nologo=true&private=true';
+            $imageUrl = 'https://image.pollinations.ai/prompt/' . rawurlencode(mb_substr($prompt, 0, 900)) . '?width=512&height=512&nologo=true&private=true';
             $imageContent = Http::timeout(60)->get($imageUrl)->body();
             if (empty($imageContent)) {
                 throw new \RuntimeException('Failed to download image from Pollinations.ai');
